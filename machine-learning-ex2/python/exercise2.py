@@ -11,11 +11,13 @@ import os
 import re
 import csv
 import time
+import random
 import numpy as np
 # import pandas as pd
 import matplotlib.pyplot as plt
 
-class EXE2(object):
+class EXE2_1(object):
+
 	def __init__(self, *args, **argw):
 		"""
 		initial the logistic model
@@ -39,13 +41,22 @@ class EXE2(object):
 		self.b = 0.0
 
 	def data_segment(self, rate = 0.7):               # segment the data_set into training and testing data set
+		num = len(self.data_set)
+
 		if 0 == len(self.data_set):
 			print("Haven't load the data!")
 			exit(1)
 
 		training_num = int(len(self.data_set) * rate)
-		self.training_data = np.array(self.data_set[: training_num + 1])
-		self.test_data = np.array(self.data_set[training_num + 1: ])
+		training_index = set()
+
+		while(training_num >= len(training_index)):
+			index = random.randint(0, num - 1)
+			if index not in training_index:
+				training_index.add(index)
+
+		self.training_data = np.array(self.data_set[[i for i in training_index]])
+		self.test_data = np.array(self.data_set[[i for i in range(num) if i not in training_index]])
 
 	def sigmod(self, data, w_array, b):
 		return 1 / (1 + np.exp(-(w_array * data + b)))
@@ -96,6 +107,11 @@ class EXE2(object):
 		# print("w: %s\tb: %s" %(self.w_array, self.b))
 		print("w: %s\tb: %s\n" %(self.w_array, self.b))
 		print("Error of this model: %s" %format(error[0]))
+		if 2 == len(data[:, 0]):
+			x = np.linspace(self.data_set[:, 0].min(), self.data_set[:, 0].max(), 100)
+			y = (-self.b[0, 0] - x * self.w_array[0, 0]) / self.w_array[0, 1]
+			plt.plot(x, y)
+		plt.show()
 
 	def show_data(self):
 		negtive = self.data_set[self.data_set[:, -1] == 0]       # select the negtive pointers
@@ -103,18 +119,27 @@ class EXE2(object):
 
 		plt.plot(negtive[:, 0], negtive[:, 1], "rx", label = "negtive pointers")
 		plt.plot(positive[:, 0], positive[:, 1], "go", label = "positive pointers")
-		plt.legend()
+		# plt.ylim(self.data_set[:, 1].min(), self.data_set[:, 1].max() * 1.1)
+		plt.legend(loc = "upper right")
 		plt.grid(True)
-		plt.show()
+		# plt.show()
+
+class EXE2_2(EXE2_1):
+
+	def set_feature(self):
+		pass
+
+def demo1():
+	path = "../ex2/ex2data1.txt"
+	exe2_1 = EXE2_1(0.001)
+	exe2_1.load_data(path)
+	exe2_1.show_data()
+	exe2_1.data_segment(rate = 0.7)
+	exe2_1.training(500, "regular", lamda = 1)
+	exe2_1.testing()
 
 def main():
-	path = "../ex2/ex2data1.txt"
-	exe2 = EXE2(0.001)
-	exe2.load_data(path)
-	exe2.show_data()
-	exe2.data_segment()
-	exe2.training(300, "regular", lamda = 1)
-	exe2.testing()
+	demo1()
 
 if __name__ == '__main__':
 	main()
