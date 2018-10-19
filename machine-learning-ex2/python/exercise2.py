@@ -11,11 +11,9 @@ import os
 import re
 import csv
 import time
-import numpy as np 
-import pandas as pd 
+import numpy as np
+# import pandas as pd
 import matplotlib.pyplot as plt
-
-path = "../ex2/ex2data1.txt"
 
 class EXE2(object):
 	def __init__(self, *args, **argw):
@@ -52,7 +50,7 @@ class EXE2(object):
 	def sigmod(self, data, w_array, b):
 		return 1 / (1 + np.exp(-(w_array * data + b)))
 
-	def training(self, iterate = 100, type = "NO", lamda = 0.01):
+	def training(self, iterate = 100, type = "NO", lamda = 1):
 		"""
 		Training the model:
 		@iterate: number of iterations in training
@@ -64,7 +62,7 @@ class EXE2(object):
 
 		except:
 			print("Haven't segment the data set!")
-			data = np.mat(self.data_set[:, : -1]).T 
+			data = np.mat(self.data_set[:, : -1]).T
 			label = self.data_set[:, -1]
 
 		m = len(label)
@@ -72,14 +70,14 @@ class EXE2(object):
 			dz = 1 / m * (self.sigmod(data, self.w_array, self.b) - label)
 			# size of dz: (1, m)
 			# print(dz.shape)
-			dw = dz * data.T 
+			dw = dz * data.T
 			# size of dw: (1, len(data))
 			db = np.sum(dz, axis = 1)
-			
-			if re.match(r"^re*$", type.lower()):
-				dw += lamda / m * np.multiply(w, w)
 
-			self.w_array -= self.alpha * dw 
+			if re.match(r"^re*", type.lower()):
+				dw += lamda / m * self.w_array
+
+			self.w_array -= self.alpha * dw
 			self.b -= db
 
 	def testing(self, *args):
@@ -95,6 +93,8 @@ class EXE2(object):
 		test_res = self.sigmod(data, self.w_array, self.b)
 		res = np.where(test_res > 0.5, 1, 0)
 		error = np.abs(res - label).sum(axis = 1) / len(label)
+		# print("w: %s\tb: %s" %(self.w_array, self.b))
+		print("w: %s\tb: %s\n" %(self.w_array, self.b))
 		print("Error of this model: %s" %format(error[0]))
 
 	def show_data(self):
@@ -108,11 +108,12 @@ class EXE2(object):
 		plt.show()
 
 def main():
+	path = "../ex2/ex2data1.txt"
 	exe2 = EXE2(0.001)
 	exe2.load_data(path)
 	exe2.show_data()
 	exe2.data_segment()
-	exe2.training(300)
+	exe2.training(300, "regular", lamda = 1)
 	exe2.testing()
 
 if __name__ == '__main__':
