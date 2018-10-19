@@ -96,7 +96,6 @@ class EXE2(object):
 		res = np.where(test_res > 0.5, 1, 0)
 		error = np.abs(res - label).sum(axis = 1) / len(label)
 		print("Error of this model: %s" %format(error[0]))
-		x = np.arange(self.data_set.min(), 0.1, self.data_set.max())
 
 	def show_data(self):
 		negtive = self.data_set[self.data_set[:, -1] == 0]       # select the negtive pointers
