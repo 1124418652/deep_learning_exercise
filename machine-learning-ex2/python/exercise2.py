@@ -16,13 +16,15 @@ import numpy as np
 # import pandas as pd
 import matplotlib.pyplot as plt
 
+
 class EXE2_1(object):
 
-	def __init__(self, *args, **argw):
+	def __init__(self, *args, **kwarg):
 		"""
-		initial the logistic model
-		@alpha: learning rate
+		# initial the logistic model
+		# @alpha : learning rate
 		"""
+
 		if 1 == len(args):
 			self.alpha = args[0]
 		else: self.alpha = 1
@@ -63,7 +65,7 @@ class EXE2_1(object):
 
 	def training(self, iterate = 100, type = "NO", lamda = 1):
 		"""
-		Training the model:
+		Training the model:  
 		@iterate: number of iterations in training
 		@type: "REGULAR": regularization when calculate the dw
 		"""
@@ -124,10 +126,20 @@ class EXE2_1(object):
 		plt.grid(True)
 		# plt.show()
 
+
 class EXE2_2(EXE2_1):
 
-	def set_feature(self):
-		pass
+	def set_feature(self, index):
+		self.index = index
+		new_dataSet = np.ones((len(self.data_set), self.index * self.index))
+
+		for i in range(self.index):
+			for j in range(self.index):
+				new_dataSet[:, i * self.index + j] = np.power(self.data_set[:, 0], i)\
+					* np.power(self.data_set[:, 1], j)
+
+		self.data_set = new_dataSet
+		self.w_array = np.mat(np.zeros(len(self.data_set[0]) - 1))
 
 def demo1():
 	path = "../ex2/ex2data1.txt"
@@ -137,6 +149,16 @@ def demo1():
 	exe2_1.data_segment(rate = 0.7)
 	exe2_1.training(500, "regular", lamda = 1)
 	exe2_1.testing()
+
+def demo2():
+	path = "../ex2/ex2data2.txt"
+	exe2_2 = EXE2_2(0.001)
+	exe2_2.load_data(path)
+	exe2_2.show_data()
+	exe2_2.set_feature(6)
+	exe2_2.data_segment()
+	exe2_2.training(600, type = "regular")
+	exe2_2.testing()
 
 def main():
 	demo1()
