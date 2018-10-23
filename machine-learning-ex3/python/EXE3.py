@@ -1,19 +1,22 @@
 #usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-# project: the algrithom of gray scale transfrom
+# project: Exercise 3
 # author:  xhj
 # email:   1124418652@qq.com
-# date:    2018/ 9/18
+# date:    2018/ 10/22
 """
 
 import os
-import cv2
+import time
+import json
 import numpy as np 
 import matplotlib.pyplot as plt
 from scipy import io
+from collections import namedtuple
 
 __all__ = ["EXE3_1", "EXE3_2"]
+
 
 class EXE3_1(object):
 	"""
@@ -24,6 +27,11 @@ class EXE3_1(object):
 	@ classes: the number of labels
 	"""
 
+	count = 0
+
+	def __len__(self):
+		return EXE3_1.count
+
 	def __init__(self, data_set, labels, classes = 10):
 		self.data_set = data_set              # 训练集
 		self.labels = labels                  # 标记
@@ -33,6 +41,7 @@ class EXE3_1(object):
 		# 因为需要分成 label_num 类，所以需要 label_num 组 w 值
 		self.w1_array = np.mat(np.random.randn(self.label_num, self.feature_num) / 1000)
 		self.b1 = np.mat(np.zeros(self.label_num)).T
+		EXE3_1.count += 1
 
 	def show_img(self, row = 20, col = 20, img_row = 20, img_col = 20):
 		img = []
@@ -40,14 +49,14 @@ class EXE3_1(object):
 		for i in range(row * col):
 			img.append(self.data_set[i].reshape((img_row, img_col)))      # 读取指定数目的图片，存入数组
 
-		plt.imshow(img[0])
+		# plt.imshow(img[0])
 		img = np.concatenate(img, axis = 0)
 		img = img.reshape(row, col, img_row, img_col).transpose((0, 2, 1, 3))\
 			.reshape((row * img_row, col * img_col))          # 拼接成一幅大图像
 		# print(img.shape)
 		# cv2.imshow("img", img)
 		# cv2.waitKey(0)
-		# plt.imshow(img)
+		plt.imshow(img)
 		plt.show()
 
 	def sigmod(self, data, w_array, b):
@@ -58,6 +67,7 @@ class EXE3_1(object):
 		# @iterate: 迭代次数
 		# @alpha: 步长
 		"""
+		start = time.time()
 		data = np.mat(self.data_set).T
 		labels = np.tile(self.labels.T, 10).reshape(10, self.num)  # 构造一个与样本同维度的标签集
 		labels[0] = np.where(labels[0] == 10, 1, 0)
@@ -72,6 +82,8 @@ class EXE3_1(object):
 			self.w1_array -= alpha * dw
 			self.b1 -= alpha * db
 
+		time_used = time.time() - start
+
 	def predict(self, data):
 		data = np.mat(data).T
 		return np.argmax(self.sigmod(data, self.w1_array, self.b1))
@@ -84,6 +96,129 @@ class EXE3_1(object):
 		error = np.sum(np.where(res == labels.T, 0, 1)) / len(data_set)
 		print("Error of this model: ", error)
 
+
+class EXE3_2(EXE3_1):
+	"""
+	使用浅层（双层）逻辑斯蒂网络实现手写数字的识别
+	"""
+	flag = False    # 用于标记该模型是否已经经过训练，False：未训练
+
+	def set_warray(self, w1_num, w2_num):
+		self.w1_array = np.mat(np.random.randn(w1_num, self.feature_num) / 1000)
+		self.w2_array = np.mat(np.random.randn(w2_num, w1_num) / 1000)    # 神经网络的 w 矩阵需要进行初始化
+		self.b1 = np.mat(np.zeros(w1_num)).T
+		self.b2 = np.mat(np.zeros(w2_num)).T
+
+	def feed_prop(self, data_set):
+		"""
+		神经网络的前向传播，在执行该函数之前要先执行 set_warray()，设定神经网络的权值
+		# @data_set: dims 为（feature，num）的数据向量
+		"""
+		a1 = self.sigmod(data_set, self.w1_array, self.b1)
+		a2 = self.sigmod(a1, self.w2_array, self.b2)
+		return a1, a2
+
+	def set_labels(self, label_num, num, labels):
+		label_array = np.tile(labels.T, label_num).reshape(10, num)
+		label_array[0] = np.where(label_array[0] == 10, 1, 0)
+
+		for i in range(1, label_num):
+			label_array[i] = np.where(label_array[i] == i, 1, 0)
+
+		return label_array
+
+	def back_prop(self, iterate = 100, alpha = 1):
+		"""
+		神经网络的反向传播，训练 w1_array, b1, w2_array, b2
+		# @iterate：迭代次数
+		# @alpha：步长
+		"""
+		start = time.time()
+		a0 = np.mat(self.data_set).T
+		labels = self.set_labels(self.label_num, self.num, self.labels)
+		
+		for i in range(iterate):
+			a1, a2 = self.feed_prop(a0)
+			dz2 = 1 / self.num * (a2 - labels)         # (dl / da2) * (da2 / dz)
+			dw2 = dz2 * a1.T
+			db2 = dz2.sum(axis = 1)
+			dz1 = np.multiply(self.w2_array.T * dz2, np.multiply(a1, (1 - a1)))
+			dw1 = dz1 * a0.T
+			db1 = dz1.sum(axis = 1)
+			self.w2_array -= alpha * dw2 
+			self.b2 -= alpha * db2
+			self.w1_array -= alpha * dw1
+			self.b1 -= alpha * db1
+
+		# 利用一个 namedtuple 来存储训练好的网络
+		self.trained_network = namedtuple("trained_network", ["w1_array", "b1", "w2_array", "b2"])
+		self.trained_network.w1_array = self.w1_array
+		self.trained_network.b1 = self.b1
+		self.trained_network.w2_array = self.w2_array
+		self.trained_network.b2 = self.b2
+
+		EXE3_2.flag = True
+		time_used = time.time() - start
+		print("Time used of network training: %f s" %(time_used))
+
+	def dict2json(self, file_path):
+		if False == EXE3_2.flag:
+			print("Have not trained the network!")
+			return 1 
+
+		else:
+			if 0 != len(file_path):
+				fw = open(file_path, "w+")
+				json.dump({"w1_array": self.w1_array.tolist(), 
+					"b1": self.b1.tolist(), 
+					"w2_array": self.w2_array.tolist(),
+					"b2": self.b2.tolist()}, fw)
+				fw.close()
+
+			else:
+				d = json.dumps({"w1_array": self.w1_array.tolist(), 
+					"b1": self.b1.tolist(),
+					"w2_array": self.w2_array.tolist(),
+					"b2": self.b2.tolist()})
+				print(d)
+
+	def testing(self, data, labels):
+		if False == EXE3_2.flag:
+			print("You have not training the model!\nRun function back_prop() first!")
+			return 100
+
+		else:
+			num = len(data)                # 测试数据的数据量
+			data = np.mat(data).T          # 将测试数据转置，以便带入模型计算
+			a1, a2 = self.feed_prop(data)
+			# a2 = a2.T 
+			res = np.zeros((len(a2), num)) # 记录测试结果
+			labels = self.set_labels(10, num, labels)     # 将测试数据的标记改为（label_num, num）的格式
+
+			error = 0.0
+			for i in range(len(a2.T)):     # a2 为纵向排列的测试结果（纵向数据为分别属于该标签的概率）
+				res[np.argmax(a2.T[i])][i] = 1
+				if 1 != labels[np.argmax(a2.T[i])][i]:
+					error += 1 
+			
+			error /= num                   # 计算错误率
+			print("The error of this network: ", error)
+
+	def predict(self, data):
+		if False == EXE3_2.flag:
+			print("You have not training the model!\nRun function back_prop() first!")
+
+		else:
+			# print(self.w2_array, self.b1)
+			data = np.mat(data).T 
+			a1, a2 = self.feed_prop(data)
+			a2 = a2.T
+
+			for i in range(len(a2)):
+				print("The result of predict of picture %d is: %d" %(i, np.argmax(a2[i])))
+
+
+
 def demo1():
 	path = "../ex3/ex3data1.mat"
 	data = io.loadmat(path)
@@ -95,8 +230,23 @@ def demo1():
 	# print(exe3_1.predict(data_set[4900]))
 	exe3_1.testing(data_set[1000:5000], labels[1000:5000])
 
+def demo2():
+	path = "../ex3/ex3data1.mat"
+	data = io.loadmat(path)
+	data_set = data["X"]
+	labels = data["y"]
+	exe3_2 = EXE3_2(data_set, labels)
+	# exe3_2.show_img()
+	exe3_2.set_warray(25, 10)
+	# exe3_2.set_labels(10, len(labels), labels)
+	exe3_2.back_prop()
+	exe3_2.testing(data_set[5:4000], labels[5:4000])
+	exe3_2.dict2json("trained_network.txt")
+	# exe3_2.predict(data_set[2000: 2100])
+	# exe3_2.feed_prop(data_set, labels)
+
 def main():
-	demo1()
+	demo2()
 
 if __name__ == '__main__':
 	main()
