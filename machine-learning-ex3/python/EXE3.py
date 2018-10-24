@@ -189,7 +189,7 @@ class EXE3_2(EXE3_1):
 	def testing(self, data, labels):
 		if False == EXE3_2.flag:
 			print("You have not training the model!\nRun function back_prop() first!")
-			return 100
+			return 1
 
 		else:
 			num = len(data)                # 测试数据的数据量
@@ -251,7 +251,7 @@ def demo2():
 	jsonPath = os.path.join(base_path, "trained_network.txt")
 	# exe3_2.dict2json(jsonPath)
 	exe3_2.network_from_json(jsonPath)
-	exe3_2.predict(data_set[000: 100], file_path = jsonPath)
+	exe3_2.predict(data_set[000: 2000], file_path = jsonPath)
 	exe3_2.testing(data_set[5:4000], labels[5:4000])
 
 def main():
