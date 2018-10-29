@@ -1,7 +1,7 @@
 #usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-# project: Exercise 4
+# project: Exercise 4(three layers Logistic network with regularization)
 # author:  xhj
 # email:   1124418652@qq.com
 # date:    2018/ 10/24
@@ -87,10 +87,17 @@ class ANN(object):
 			dw1 = dz1 * a0.T 
 			db1 = dz1.sum(axis = 1)
 
-			self.w2_array -= alpha * dw2
-			self.b2 -= alpha * db2 
-			self.w1_array -= dw1
-			self.b1 -= db1
+			if False == regular:
+				self.w2_array -= alpha * dw2
+				self.b2 -= alpha * db2 
+				self.w1_array -= alpha * dw1
+				self.b1 -= alpha * db1
+
+			else:
+				self.w2_array -= alpha * (dw2 + lamda / num * self.w2_array)
+				self.b2 -= alpha * db2
+				self.w1_array -= alpha * (dw1 + lamda / num * self.w1_array)
+				self.b1 -= alpha * db1
 
 		self.flag = True
 		print("Network training time: %.2f s" %(time.time() - start))
@@ -155,11 +162,11 @@ def demo():
 	exe4 = ANN(feat_num = 400, w1_num = 25, w2_num = 10)
 	# exe4.show_img(data_set, 100, 20)
 
-	exe4.training(data_set, labels)
+	# exe4.training(data_set, labels, regular = True)
 
 	annPath = "ann.txt"
 	exe4.load_model(annPath)
-	exe4.testing(data_set[0: 1000], labels[0: 1000])
+	exe4.testing(data_set[000: 3000], labels[000: 3000])
 	exe4.predict(data_set[[1, 100, 1000, 1400, 2000, 3000]])
 	# fw = open(outPath, "w+")
 	# exe4.toJsonStyle()
