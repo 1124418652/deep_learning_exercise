@@ -67,7 +67,7 @@ class SVM(object):
 
 		return alpha
 
-	def smoSimple(self, data_set, labels, C = 1, toler = 1e3, maxIter = 100):
+	def smoSimple(self, data_set, labels, C = 0.6, toler = 0.01, maxIter = 100):
 		data_set = np.mat(data_set)
 		labels = np.mat(labels).T
 		rows, cols = data_set.shape
@@ -79,7 +79,7 @@ class SVM(object):
 		"""
 		更新 alpha 的公式为： alpha2_new = alpha2_old + y2 * (E1 - E2) / (K11 + K22 - 2 * K12)
 		"""
-		while(iter < maxIter):
+		while(iter < maxIter):           # 当找不到可以更新的合适的 alpha2 时，iter++
 			alpha_pairs_changed = 0
 			
 			for i in range(rows):            # 通过遍历所有的样本点来选择 alpha1
@@ -108,8 +108,8 @@ class SVM(object):
 						continue
 
 					eta = 2.0 * data_set[i, :] * data_set[j, :].T - \
-						data_set[i, :] * data_set[i, :] - \
-						data_set[j, :] * data_set[j, :]                # 计算更新 alpha 的式子的分母
+						data_set[i, :] * data_set[i, :].T- \
+						data_set[j, :] * data_set[j, :].T                # 计算更新 alpha 的式子的分母
 
 					if eta >= 0:
 						print("eta >= 0")
@@ -124,6 +124,48 @@ class SVM(object):
 
 					# 通过等式 alpha_new_i * yi + alpha_new_j * yj = alpha_old_i * yi + alpha_old_j * yj
 					alphas[i] += labels[i] * labels[j] * (alpha_j_old - alphas[j])
+
+					b1 = b - Ei - labels[i] * (alphas[i] - alpha_i_old) * \
+						data_set[i, :] * data_set[i, :].T - \
+						labels[j] * (alphas[j] - alpha_j_old) * \
+						data_set[j, :] * data_set[i, :].T
+					b2 = b - Ej - labels[j] * (alphas[i] - alpha_j_old) * \
+						data_set[j, :] * data_set[j, :].T - \
+						labels[j] * (alphas[j] - alpha_j_old) * \
+						data_set[j, :] * data_set[j, :].T
+
+					if 0 < alphas[i] and C > alphas[i]:
+						b = b1 
+
+					elif 0 < alphas[j] and C > alphas[j]:
+						b = b2
+
+					else:
+						b = (b1 + b2) / 2.0 
+
+					alpha_pairs_changed += 1 
+
+					print("iter: %d,\ti: %d,\tpairs changed: %d" %(iter, i, alpha_pairs_changed))
+			if alpha_pairs_changed == 0:
+				iter += 1 
+			else:
+				iter = 0 
+			print("iter: %d" %(iter))
+
+		# print(alphas, b)
+		return alphas, b
+
+	def predict(self, alphas, b, data_set, labels, x):
+		data_set = np.mat(data_set)
+		labels = np.mat(labels).T
+		x = np.mat(x)
+		y_p = np.multiply(alphas, labels).T * (data_set * x.T) + b
+
+		print(y_p)
+		if y_p >= 0:
+			return 1
+		else:
+			return -1
 
 
 def demo():
@@ -157,7 +199,8 @@ def demo3():
 	# print(y)
 	x_new, y_new = app.modify_data(x, y)
 	# print(x_new)
-	app.smoSimple(x_new, y_new)
+	alpha, b = app.smoSimple(x_new, y_new)
+	yp = app.predict(alpha, b, x_new, y_new, x_new[1])
 
 
 def main():
