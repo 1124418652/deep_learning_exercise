@@ -39,7 +39,7 @@ def demo():
 	x, y = data_set["X"], data_set['y']
 	# print(data_set)
 	demo1 = SVM()
-	demo1.show_data(x, y)
+	demo1.show_data(x, y) 
 
 def main():
 	demo()
