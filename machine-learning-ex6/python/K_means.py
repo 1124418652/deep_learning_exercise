@@ -23,7 +23,7 @@ __all__ = ['K_Means']
 class K_Means(object):
 
 	def __init__(self, K = 2):
-		self.K = K 
+		self.K = K
 
 	def load_data(self, file_path):
 		data_set = io.loadmat(file_path)
@@ -48,20 +48,22 @@ class K_Means(object):
 			loc = random.randint(0, self.data_size - 1)
 			if loc not in locs:
 				locs.add(loc)
-				i += 1 
+				i += 1
 		return locs
 
-	def cluster(self, data, k_num = 2, iter = 100):
+	def cluster(self, data, k_num = 3, iter = 100):
 		c = np.zeros((self.data_size, iter))       # store the cluster center every simples belong to
 		# lose = np.zeros(iter)
-		result = namedtuple('result', ['iter', 'k', 'lose'])
+		result = {}
+		result_array = []
+		min_lose = np.power(data, 2).sum()
 
 		init_kloc = self.init_k(k_num)             # initialize k for the first time
 		k = []
 		for loc in init_kloc:
 			k.append(data[loc])
-		
-		i = 1
+
+		i = 0
 		while(i < iter):
 			step = 0      # count the numbers of updating k
 			while(True):
@@ -77,18 +79,17 @@ class K_Means(object):
 				k_new = []
 				diff = 0.0
 				lose = 0.0
+
 				for class_label in range(len(k)):
 					tmp_array = data[np.where(c[:, i] == class_label)]
 					tmp_pointer = tmp_array.sum(axis = 0) / len(tmp_array)
-					diff += (tmp_pointer - k[class_label]).sum()	
+					diff += (tmp_pointer - k[class_label]).sum()
 					# print(np.power(tmp_array - tmp_pointer, 2).sum())
 					lose += np.power(tmp_array - tmp_pointer, 2).sum()
-					k_new.append(tmp_pointer)				
+					k_new.append(tmp_pointer)
 
 				if(abs(diff) < 1e-6):
-					result.iter = i 
-					result.k = k_new
-					result.lose = lose
+					result_array.append({"i": i, "lose": lose, "k": k})
 					print("step of %d is: %d" %(i, step))
 					break          # 跳出更新k的循环
 				else:
@@ -99,17 +100,19 @@ class K_Means(object):
 			k = []
 			for loc in init_kloc:
 				k.append(data[loc])
+
 			i += 1
-		# print(c)
-		return k_new
-		# print(c)
 
+		sorted_res = sorted(result_array, key = lambda x: x['lose'])
+		return sorted_res[0]['k'], sorted_res[0]['lose']
 
+	def choose_k(self, data, max_k, iter = 100):
+		pass
 
 def demo():
 	kmeans = K_Means()
 	base_path = os.getcwd()
-	file_path = os.path.join(base_path, "../ex6/ex6data1.mat")
+	file_path = os.path.join(base_path, "../../machine-learning-ex7/ex7/ex7data2.mat")
 	x = kmeans.load_data(file_path)
 	kmeans.show_data(x)
 	# locs = kmeans.init_k(2)
@@ -123,13 +126,13 @@ def demo():
 	# plt.plot(x_center[1][0], x_center[1][1], "+")
 	# plt.show()
 
-	k = kmeans.cluster(x)
-	plt.plot(k[0][0], k[0][1], "+")
-	plt.plot(k[1][0], k[1][1], "*")
-	# plt.plot(k[2][0], k[2][1], "+")
+	k, lose = kmeans.cluster(x)
+	plt.plot(k[0][0], k[0][1], "o")
+	plt.plot(k[1][0], k[1][1], "o")
+	plt.plot(k[2][0], k[2][1], "o")
 	plt.show()
 
-	print(k)
+	# print(k)
 
 def main():
 	demo()
