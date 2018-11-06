@@ -1,7 +1,7 @@
 #usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-# project: Exercise 3
+# project: Exercise 3(Logistic classifier and three layers Logistic network)
 # author:  xhj
 # email:   1124418652@qq.com
 # date:    2018/ 10/22
