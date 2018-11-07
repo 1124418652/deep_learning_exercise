@@ -13,6 +13,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy import io 
+import matplotlib
+matplotlib.rcParams['font.sans-serif'] = ['SimHei']
 
 __all__ = ["ANN"]
 
@@ -51,6 +53,7 @@ class ANN(object):
 
 		plt.imshow(img.T)
 		plt.grid(True)
+		plt.title(u"图片显示")
 		plt.show()
 
 	def __set_label(self, labels, label_num, num):
@@ -160,7 +163,7 @@ def demo():
 	labels = data["y"]
 
 	exe4 = ANN(feat_num = 400, w1_num = 25, w2_num = 10)
-	# exe4.show_img(data_set, 100, 20)
+	exe4.show_img(data_set, 100, 20)
 
 	# exe4.training(data_set, labels, regular = True)
 
