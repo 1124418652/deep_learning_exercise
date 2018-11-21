@@ -255,7 +255,7 @@ def demo2():
 	exe3_2.testing(data_set[5:4000], labels[5:4000])
 
 def main():
-	demo2()
+	demo1()
 
 if __name__ == '__main__':
 	main()

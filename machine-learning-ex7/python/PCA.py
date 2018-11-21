@@ -41,7 +41,14 @@ class PCA(object):
 		eigenvalue, eigenvector = np.linalg.eig(cov_mat)
 		principal_vector = eigenvector[:, np.argmax(eigenvalue)]
 		final_data = central_data * principal_vector
-		return final_data
+		return final_data, principal_vector
+
+	def reconstruct(self, res_data, dest_data, principal_vector):
+		tmp_data = dest_data * principal_vector.T
+		print(tmp_data)
+		bias = np.power((tmp_data - res_data), 2).sum() \
+				/ (res_data * res_data).sum()
+		return tmp_data, bias
 
 
 class Plot(object):
@@ -91,10 +98,14 @@ def demo():
 				[-0.31, -0.31],
 				[-0.71, -1.01]]
 	data_test = np.array(data_test)
-	data_new = pca.choose_principal_comp(data_test)
+	data_test2 = np.array(data_test2)
+	data_new, principal_vector = pca.choose_principal_comp(x)
 	print(data_new)
-	plt.plot(data_test[:, 0], data_test[:, 1], '+')
-	plt.show()
+	# reconstruct_data = pca.reconstruct(data_test2, data_new, principal_vector)
+
+	# plt.plot(data_test[:, 0], data_test[:, 1], '+')
+	# plt.plot(principal_vector[0], principal_vector[1], "*")
+	# plt.show()
 
 def main():
 	demo()
