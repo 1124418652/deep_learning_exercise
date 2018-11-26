@@ -61,16 +61,20 @@ class Logistic_Neural_Network(object):
 		a2 = self._sigmod(w2, a1, b2)
 		return a1, a2
 
-	def back_propagation(self, data_set, labels, iterate = 500):
+	def back_propagation(self, data_set, labels, iterate = 1500):
 		params = demo.init_w_b(2, [15,data_set.shape[0]],[1,15])
 		w1 = params[1]['w']
 		b1 = params[1]['b']
 		w2 = params[2]['w']
 		b2 = params[2]['b']
 		m = 209
+		cost = []
 
 		for i in range(iterate):
 			a1, a2 = self.forward_propagation(data_set, w1, b1, w2, b2)
+			cost.append(- 1 / m * np.sum(np.multiply((1-labels), np.log(1-a2))\
+										+np.multiply(labels, np.log(a2))))
+			# print(cost)
 			dz2 = 1 / m * (a2 - labels)
 			dw2 = dz2 * a1.T
 			db2 = dz2.sum(axis = 1)
@@ -83,13 +87,18 @@ class Logistic_Neural_Network(object):
 			w1 -= 0.01 * dw1
 			b1 -= 0.01 * db1
 
-		return w1, b1, w2, b2
+		plt.plot(np.linspace(0, iterate, iterate), cost)
+		plt.xlabel("iterations")
+		plt.ylabel("cost")
+		plt.title("cost-iterations-curve")
+		plt.savefig("cost.jpg")
+		return w1, b1, w2, b2, cost
 
 if __name__ == '__main__':
 	demo = Logistic_Neural_Network()
 	data_set, labels = demo.load_train_data("datasets/train_catvnoncat.h5")[0:2]
 	#demo.show_img(data_set, 25)
-	data_set = data_set.reshape(data_set.shape[0],-1).T
+	data_set = data_set.reshape(data_set.shape[0],-1).T / 255
 	demo.describe_data(data_set)
 	# params = demo.init_w_b(2, [5,data_set.shape[0]],[1,5])
 	# w1 = params[1]['w']
@@ -97,4 +106,5 @@ if __name__ == '__main__':
 	# w2 = params[2]['w']
 	# b2 = params[2]['b']
 	# demo.forward_propagation(data_set, w1, b1, w2, b2)
-	demo.back_propagation(data_set, labels, 100)
+	w1, b1, w2, b2, cost = demo.back_propagation(data_set, labels, 10000)
+	print(cost)

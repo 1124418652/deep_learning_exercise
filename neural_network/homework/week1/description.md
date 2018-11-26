@@ -7,3 +7,6 @@ virtualenv
 2. h5py
 3. numpy 
 4. matplotlib
+
+**模型训练结果**  
+!img[]("cost.jpg")
