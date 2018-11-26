@@ -56,17 +56,24 @@ class Logistic_Neural_Network(object):
         print("number of this data: %d" %(data_num))
         print("image size: ", image_shape)
 
-    def forward_propagation(self, data_set, w, b):
-        pass
+    def forward_propagation(self, data_set, w1, b1, w2, b2):
+        a1 = self._sigmod(w1, data_set, b1)
+        a2 = self._sigmod(w2, a1, b2)
+        return a1, a2
 
     def back_propagation(self, data_set, labels, iterate = 100):
         pass
 
 if __name__ == '__main__':
     demo = Logistic_Neural_Network()
-    data_set = demo.load_test_data("datasets/test_catvnoncat.h5")[0]
+    data_set, labels = demo.load_train_data("datasets/train_catvnoncat.h5")[0:2]
     #demo.show_img(data_set, 25)
     #print(data_set.shape)
     demo.describe_data(data_set)
     print(demo._sigmod([1,2,3], [[2],[3],[2]], 10))
-    demo.init_w_b(2, [4,2],[3,2])
+    params = demo.init_w_b(2, [4,2],[3,4])
+    w1 = params[1]['w']
+    b1 = params[1]['b']
+    w2 = params[2]['w']
+    b2 = params[2]['b']
+    demo.forward_propagation(data_set, w1, b1, w2, b2)
