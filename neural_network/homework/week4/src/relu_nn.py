@@ -27,9 +27,8 @@ class ReLU_NN(Mult_layer_network):
 		assert(w.shape[0] == b.shape[0])
 
 		z = w * data_set + b
-		z = (z - z.mean(axis = 1))
-		z = z / np.power(z, 2).mean(axis = 1)
-		print(z)
+		# z = (z - z.mean(axis = 1))
+		# z = z / np.power(z, 2).mean(axis = 1)
 		if 'relu' == type.lower():
 			a = np.maximum(0, z)
 			da_dz = np.where(z >= 0, 1, 0)
@@ -49,23 +48,26 @@ class ReLU_NN(Mult_layer_network):
 		return a_array, da_dz, z_array
 
 	def back_propgation(self, data_set, labels, \
-						iteration = 100, \
-						learning_rate = 0.2\
+						iteration = 1000, \
+						learning_rate = 0.3\
 						):
 		w_array, b_array = demo.init_network(num_layer = 2, 
 					  					 nodes = {1: 10, 2: 1}, 
-					  					 feature_num = train_dataSet.shape[0])
+					  					 feature_num = data_set.shape[0])
+		# print(w_array[1].shape)
 		m = len(labels)
 		for i in range(iteration):
+			rate = (1 / float(1 + 0.005 * i)) * learning_rate
+
 			a_array, da_dz, z_array = self.forward_propgation(data_set, w_array, b_array)
 
 			res = np.where(a_array[2] >= 0, 1, 0)
 			res = np.mat(res)
-			cost = -1 / m * np.sum(np.multiply((1-labels), np.log(1-res + 10e-8)) +\
-									np.multiply(labels, np.log(res)))
+			cost = -1 / m * np.sum(np.multiply((1-labels), np.log(1-a_array[2]+10e-10) +\
+									np.multiply(labels, np.log(a_array[2] + 10e-10))))
 
-
-			da2 = (a_array[2] - labels) / (np.multiply(a_array[2], 1 - a_array[2]) + 10e-8)
+			# print(a_array[2])
+			da2 = (a_array[2] - labels) / (np.multiply(a_array[2], 1 - a_array[2]))
 			dz2 = np.multiply(da2, da_dz[2])
 			dw2 = dz2 * a_array[1].T
 			db2 = dz2.sum(axis = 1)
@@ -73,16 +75,24 @@ class ReLU_NN(Mult_layer_network):
 			dw1 = dz1 * a_array[0].T
 			db1 = dz1.sum(axis = 1)
 
-			w_array[1] -= 1 / m * learning_rate * dw1
-			b_array[1] -= 1 / m * learning_rate * db1
-			w_array[2] -= 1 / m * learning_rate * dw2
-			b_array[2] -= 1 / m * learning_rate * db2 
+			w_array[1] -= 1 / m * rate * dw1
+			b_array[1] -= 1 / m * rate * db1
+			w_array[2] -= 1 / m * rate * dw2
+			b_array[2] -= 1 / m * rate * db2 
 
-			print(cost)
+			# print(cost)
+			if i % 100 == 0:
+				print(cost, rate)
+		return w_array, b_array
 		
 
 	def testing(self, data_set, labels, w_array, b_array):
-		pass
+		num = len(labels)
+		a_array, da_dz, z_array = self.forward_propgation(data_set, w_array, b_array)
+		res = np.where(a_array[2] >= 0.5, 1, 0)
+		print(res)
+		print(labels)
+		print(np.abs(res - labels).sum() / num)
 
 if __name__ == '__main__':
 	demo = ReLU_NN()
@@ -94,7 +104,19 @@ if __name__ == '__main__':
 				"../datasets/test_catvnoncat.h5")
 	train_dataSet, train_labels = demo.load_data(train_filename, 'train')
 	test_dataSet, test_labels = demo.load_data(test_filename, 'test')
-	train_dataSet = train_dataSet / 255
-	test_dataSet = test_dataSet / 255
+	train_dataSet = np.mat(train_dataSet)
+	test_dataSet = np.mat(test_dataSet)
+	train_dataSet = (train_dataSet - train_dataSet.mean(axis = 1)) / 255 
 
-	demo.back_propgation(train_dataSet, train_labels)
+	test_dataSet = (test_dataSet - test_dataSet.mean(axis = 1)) / 255
+
+
+	data_set1 = np.random.randn(4097, 209)
+	labels = np.random.randn(209)
+	labels = np.where(labels > 0, 1, 0)
+
+	w_array, b_array = demo.back_propgation(train_dataSet, train_labels)
+	demo.testing(test_dataSet, test_labels, w_array, b_array)
+	# print(train_dataSet)
+	# demo.back_propgation(test_dataSet, test_labels)
+	# print(labels)

@@ -238,20 +238,22 @@ if __name__ == '__main__':
 	demo = Mult_layer_network()
 	train_dataSet, train_labels = demo.load_data(train_filename, 'train')
 	test_dataSet, test_labels = demo.load_data(test_filename, 'test')
-	train_dataSet = train_dataSet / 255
-	test_dataSet = test_dataSet / 255
+	train_dataSet = np.mat(train_dataSet)
+	test_dataSet = np.mat(test_dataSet)
+	train_dataSet = (train_dataSet-train_dataSet.mean(axis = 1)) / 255
+	test_dataSet = (test_dataSet-test_dataSet.mean(axis = 1)) / 255
 
 	activate_func = {1:'sigmod', 2:'sigmod', 3:'sigmod', 4:'sigmod'}
 
 	w_array, b_array, cost = demo.back_propgation(train_dataSet, train_labels, \
 						 	 step = 0.2, \
 						  	 num_layer = 4, \
-						 	 nodes = {1: 200, 2: 100, 3: 10, 4: 1},\
+						 	 nodes = {1: 100, 2: 50, 3: 10, 4: 1},\
 							 activate_func = activate_func)
 	params_filename = os.path.join(os.getcwd(),\
 					"../datasets/params.txt")
 	demo.save_to_file(params_filename, w_array = w_array, b_array = b_array, cost = cost,\
-					activate_func = {1:'sigmod', 2:'sigmod', 3:'sigmod', 4:'sigmod'})
+					activate_func = {1:'sigmod', 2:'relu', 3:'relu', 4:'sigmod'})
 	demo.testing(test_dataSet, test_labels, w_array, b_array, activate_func)
 	plt.plot(cost)
 	plt.savefig("cost_curve.jpg")
