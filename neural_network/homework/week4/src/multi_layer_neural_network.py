@@ -3,6 +3,7 @@
 import os
 import h5py
 import numpy as np 
+import matplotlib.pyplot as plt
 
 __all__ = ['Mult_layer_network']
 
@@ -22,7 +23,7 @@ class Mult_layer_network(object):
 					labels = fr['train_set_y'][:]
 				elif 'test' == type.lower():
 					data_set = fr['test_set_x'][:]
-					labels = fr['test_set_y']
+					labels = fr['test_set_y'][:]
 			return [data_set.reshape(data_set.shape[0], -1).T, \
 					labels]
 		except:
@@ -76,10 +77,14 @@ class Mult_layer_network(object):
 		assert(w.shape[1] == data_set.shape[0])
 		assert(w.shape[0] == b.shape[0])
 
+		z = w * data_set + b
 		if "sigmod" == type.lower():
-			return 1 / (1 + np.exp(-(w * data_set + b)))
+			a = 1 / (1 + np.exp(-z))
+			da_dz = np.multiply(a, (1 - a))
 		elif "relu" == type.lower():
-			return np.maximum(0, w * data_set + b)
+			a = np.maximum(0, z)
+			da_dz = np.where(z >= 0, 1, 0)
+		return a, z, da_dz
 
 	def _gradient_of_activate_func(self, a, type = 'sigmod'):
 		"""
@@ -114,23 +119,26 @@ class Mult_layer_network(object):
 
 		num_layer = len(b_array)
 		a_array = {}
+		z_array = {}
+		da_dz = {}
 		a_array[0] = data_set       # a_array[0] 为输入的样本数据
 		for layer in range(1, num_layer + 1, 1): # w_array[0] 和 b_array[0] 为第一个隐藏层的参数
-			a_array[layer] = self._activate_func(a_array[layer - 1], \
+			a_array[layer], z_array[layer], da_dz[layer] = self._activate_func(a_array[layer - 1], \
 						     w_array[layer], \
 						     b_array[layer], \
 						     activate_func[layer])
-		return a_array
+		return a_array, z_array, da_dz
 
 	def back_propgation(self,
 					    data_set,
 					    labels,
 					    step = 0.2,
-					    rate_dacay = 0.0005,
+					    rate_dacay = 0.005,
 					    num_layer = 3,
 					    nodes = {1:100, 2:20, 3:1},
 					    activate_func = {1:'relu', 2:'relu', 3:'sigmod'},
-					    iteration = 200):
+					    iteration = 12500,
+					    lamda = 0.01):
 		"""
 		parameters in this function:
 		@ data_set: 输入的样本
@@ -152,29 +160,31 @@ class Mult_layer_network(object):
 			dw = {}
 			db = {}
 			layer_iter = num_layer
-			alpha = 1 / (1 + rate_dacay * i)       # 学习率（不断衰减）
-			a_array = self.forword_propgation(data_set, w_array,
+			alpha = 1 / (1 + rate_dacay * i) * step       # 学习率（不断衰减）
+			a_array, z_array, da_dz = self.forword_propgation(data_set, w_array,
 											  b_array,
 											  activate_func)
 			cost.append(-1 / sample_num * \
 						np.sum(np.multiply((1 - labels), \
-							   np.log(1 - a_array[num_layer])) \
+							   np.log(1 - a_array[num_layer] + 10e-10)) \
 							   + np.multiply(labels, \
-							   np.log(a_array[num_layer]))))       # 使用最后一层的输出 a 计算 cost
+							   np.log(a_array[num_layer] + 10e-10))))       # 使用最后一层的输出 a 计算 cost
 
-			da[num_layer] = (a_array[num_layer] - labels) \
-					  / np.multiply((1 - a_array[num_layer]), a_array[num_layer]) # 计算最后一层网络的 da
+			da[num_layer] = (a_array[num_layer] - labels + 10e-10 - 2 * 10e-10 * labels) \
+					  / (np.multiply((1 - a_array[num_layer] + 10e-10), a_array[num_layer] + 10e-10)) # 计算最后一层网络的 da
 			assert(da[num_layer].shape == a_array[num_layer].shape)
 			while(1 <= layer_iter):
+				# dz[layer_iter] = np.multiply(da[layer_iter],\
+				# 					self._gradient_of_activate_func(a_array[layer_iter],\
+				# 													activate_func[layer_iter]))
 				dz[layer_iter] = np.multiply(da[layer_iter],\
-									self._gradient_of_activate_func(a_array[layer_iter],\
-																	activate_func[layer_iter]))
+									da_dz[layer_iter])
 				dw[layer_iter] = dz[layer_iter] * a_array[layer_iter - 1].T
 				assert(dw[layer_iter].shape == w_array[layer_iter].shape)
 				db[layer_iter] = np.sum(dz[layer_iter], axis = 1)
 				assert(db[layer_iter].shape == b_array[layer_iter].shape)
 
-				w_array[layer_iter] -= 1 / sample_num * alpha * dw[layer_iter]
+				w_array[layer_iter] -= 1 / sample_num * alpha * (dw[layer_iter] + lamda * w_array[layer_iter])
 				b_array[layer_iter] -= 1 / sample_num * alpha * db[layer_iter]
 				
 				if layer_iter == 1:        # 计算完第一层的 dw 和 db 之后无需再计算 da[0]，因为 a[0] 未输入层
@@ -183,8 +193,42 @@ class Mult_layer_network(object):
 				da[layer_iter - 1] = w_array[layer_iter].T * dz[layer_iter]
 				assert[da[layer_iter - 1].shape == a_array[layer_iter - 1].shape]
 				layer_iter -= 1
-		print(cost)
+			if i % 100 == 0:
+				print("iter: %d =========> cost: %s" %(i, cost[-1]))
+		return w_array, b_array, cost 
 
+	def testing(self, data_set, labels, w_array, b_array, activate_func):
+		num = len(labels)
+		labels = np.mat(labels)
+		a_array, z_array, da_dz = self.forword_propgation(data_set, w_array, b_array, activate_func)
+		ret = np.where(a_array[len(activate_func)] >= 0.5, 1, 0)
+		print(ret)
+		print(labels)
+		print(a_array[len(activate_func)])
+		print(np.abs(ret - labels).sum() / num)
+
+
+	def save_to_file(self, filename, **kwargs):
+		import json
+		if 'w_array' in kwargs:
+			w_array = kwargs['w_array']
+			for key in w_array.keys():
+				w_array[key] = w_array[key].tolist()
+		if 'b_array' in kwargs:
+			b_array = kwargs['b_array']
+			for key in b_array.keys():
+				b_array[key] = b_array[key].tolist()
+
+		dict2json = dict(w_array = w_array, b_array = b_array, cost = cost, \
+					activate_func = kwargs['activate_func'])
+		with open(filename, 'w') as fw:
+			json.dump(dict2json, fw)
+
+	def load_params_from_file(self, filename):
+		import json
+		fr = open(filename, 'r')
+		json2dict = json.load(fr)
+		return json2dict
 
 if __name__ == '__main__':
 	train_filename = os.path.join(os.getcwd(), \
@@ -195,9 +239,19 @@ if __name__ == '__main__':
 	train_dataSet, train_labels = demo.load_data(train_filename, 'train')
 	test_dataSet, test_labels = demo.load_data(test_filename, 'test')
 	train_dataSet = train_dataSet / 255
+	test_dataSet = test_dataSet / 255
 
-	demo.back_propgation(train_dataSet, train_labels, 
-						 step = 0.2, 
-						 num_layer = 4, 
-						 nodes = {1: 200, 2: 100, 3: 10, 4: 1},
-						 activate_func = {1:'relu', 2:'relu', 3:'sigmod', 4:'sigmod'})
+	activate_func = {1:'sigmod', 2:'sigmod', 3:'sigmod', 4:'sigmod'}
+
+	w_array, b_array, cost = demo.back_propgation(train_dataSet, train_labels, \
+						 	 step = 0.2, \
+						  	 num_layer = 4, \
+						 	 nodes = {1: 200, 2: 100, 3: 10, 4: 1},\
+							 activate_func = activate_func)
+	params_filename = os.path.join(os.getcwd(),\
+					"../datasets/params.txt")
+	demo.save_to_file(params_filename, w_array = w_array, b_array = b_array, cost = cost,\
+					activate_func = {1:'sigmod', 2:'sigmod', 3:'sigmod', 4:'sigmod'})
+	demo.testing(test_dataSet, test_labels, w_array, b_array, activate_func)
+	plt.plot(cost)
+	plt.savefig("cost_curve.jpg")
