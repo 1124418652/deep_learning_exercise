@@ -107,4 +107,3 @@ if __name__ == '__main__':
 	# b2 = params[2]['b']
 	# demo.forward_propagation(data_set, w1, b1, w2, b2)
 	w1, b1, w2, b2, cost = demo.back_propagation(data_set, labels, 10000)
-	print(cost)

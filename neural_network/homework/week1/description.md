@@ -9,4 +9,4 @@ virtualenv
 4. matplotlib
 
 **模型训练结果**  
-![img]("cost.jpg")
+![](cost.jpg)
