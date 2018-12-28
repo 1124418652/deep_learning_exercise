@@ -48,8 +48,9 @@ class ReLU_NN(Mult_layer_network):
 		return a_array, da_dz, z_array
 
 	def back_propgation(self, data_set, labels, \
-						iteration = 1000, \
-						learning_rate = 0.3\
+						iteration = 1500, \
+						learning_rate = 0.3,\
+						lamda = 0.05
 						):
 		w_array, b_array = demo.init_network(num_layer = 2, 
 					  					 nodes = {1: 10, 2: 1}, 
@@ -75,14 +76,15 @@ class ReLU_NN(Mult_layer_network):
 			dw1 = dz1 * a_array[0].T
 			db1 = dz1.sum(axis = 1)
 
-			w_array[1] -= 1 / m * rate * dw1
+			w_array[1] -= 1 / m * rate * (dw1 + lamda * w_array[1])
 			b_array[1] -= 1 / m * rate * db1
-			w_array[2] -= 1 / m * rate * dw2
+			w_array[2] -= 1 / m * rate * (dw2 + lamda * w_array[2])
 			b_array[2] -= 1 / m * rate * db2 
 
 			# print(cost)
 			if i % 100 == 0:
-				print(cost, rate)
+				print("iteration: %d ===> cost: %s" %(i,cost))
+		print("\n")
 		return w_array, b_array
 		
 
@@ -90,9 +92,10 @@ class ReLU_NN(Mult_layer_network):
 		num = len(labels)
 		a_array, da_dz, z_array = self.forward_propgation(data_set, w_array, b_array)
 		res = np.where(a_array[2] >= 0.5, 1, 0)
-		print(res)
-		print(labels)
-		print(np.abs(res - labels).sum() / num)
+		print("result of test:", res)
+		print("labels from testing dataset:", labels)
+		print("\n")
+		print("testing error:", np.abs(res - labels).sum() / num)
 
 if __name__ == '__main__':
 	demo = ReLU_NN()
