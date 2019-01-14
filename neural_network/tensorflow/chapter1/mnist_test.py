@@ -3,7 +3,18 @@
 import struct
 import numpy as np 
 
-__all__ = ["load_data", "one_hot"]
+__all__ = ["load_data", 
+		   "one_hot", 
+		   "test_data_file", 
+		   "test_label_file", 
+		   "train_data_file",
+		   "train_label_file"]
+
+test_data_file = "../mnist_database/t10k-images-idx3-ubyte"
+test_label_file = "../mnist_database/t10k-labels-idx1-ubyte"
+train_data_file = "../mnist_database/train-images-idx3-ubyte"
+train_label_file = "../mnist_database/train-labels-idx1-ubyte"
+
 
 def load_data(file_name, flag = 'data'):
 
