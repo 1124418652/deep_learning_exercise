@@ -53,13 +53,11 @@ for i in range(500):
 
 	train_step_res = sess.run(train_step, feed_dict = {
 		x: training_data[:],
-		y_: training_labels[:]
-		})
+		y_: training_labels[:]})
 	
 
 	correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
 	accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 	print(sess.run(accuracy, feed_dict = {
 		x: testing_data,
-		y_: testing_labels
-		}))
+		y_: testing_labels}))
