@@ -14,6 +14,15 @@ def conv_forward(dataset, w, b, stride = 1, pad = 0):
 	@ w: 卷积核矩阵,
 		 维数为（kernel_num, f, f, w_channels）
 	@ b: 卷积核的偏移系数，kernel_num 维的向量
+
+	return:
+	@ img_output: 卷积层前向传播的输出图片，
+				  维数为（samples, img_height_new, img_width_new, kernel_num）
+	@ cache: 用于该卷积层反向传播时求解的缓存参数
+		dataset: 该层前向传播的输入图像
+		w: 该层的卷积核矩阵
+		stride: 卷积步长
+		pad: pading值
 	"""
 
 	(m, height_prev, width_prev, channels_prev) = dataset.shape
@@ -21,6 +30,11 @@ def conv_forward(dataset, w, b, stride = 1, pad = 0):
 
 	img_height = (height_prev - f + 2 * pad) // stride + 1
 	img_width = (width_prev - f + 2 * pad) // stride + 1
+	dataset = np.pad(dataset, ((0, 0), 
+							   (pad, pad),
+							   (pad, pad), 
+							   (0, 0)), 'constant', constant_values = 0)
+	cache = (dataset, w, stride, pad)
 
 	# initialize the output image dataset
 	img_output = np.zeros((m, img_height, img_width, kernel_num))
@@ -41,7 +55,7 @@ def conv_forward(dataset, w, b, stride = 1, pad = 0):
 												 width_start: width_end, :]).sum()\
 												 + b[num_channel]
 
-	return img_output
+	return img_output, cache
 
 def pool_forward(dataset, mode = 'max', stride = 2, f = 2):
 	"""
@@ -53,7 +67,11 @@ def pool_forward(dataset, mode = 'max', stride = 2, f = 2):
 
 	return:
 	@ img_output: 池化之后的输出数据
-	@ cache:
+	@ cache: 用于该池化层反向传播时求解的缓存参数
+		dataset: 该层前向传播时的输入图像
+		mode: 池化的模式 "max" | "mean"
+		stride: 池化时的移动步长
+		f: 池的大小
 	"""
 
 	(m, height_prev, width_prev, channels_prev) = dataset.shape
@@ -129,13 +147,26 @@ def pool_back_propogation(dz, cache):
 						width_start: width_end, :] += np.multiply(mask, dz[num_img, height, width, :])
 	return dA_prev
 
-def conv_back_propogation(dA, cache):
+def conv_back_propogation(dz, cache):
 	"""
 	parameters:
-	@ dA: 池化层反向传播（上采样）的输出
+	@ dz: 反向传播时传入卷积层的敏感度（d_cost / dz）
 	@ cache: 对应的卷积层的缓存数据
+		dataset: 该层前向传播的输入图像
+		w: 该层的卷积核矩阵
+		stride: 卷积步长
+		pad: pading值
+
+	return:
+	@ dA_prev: 传递到
+	@ dw:
+	@ db:
 	"""
 
+	conv_input, w_before, stride, pad = cache
+	m, img_height, img_width, channels = dz.shape
+	_, height_prev, width_prev, channels_prev = conv_input.shape
+	dA_prev_temp = np.zeros()
 
 
 def initialize_full_connect_parameters(data_size, w_size_list, b_size_list):
@@ -150,6 +181,12 @@ def pre_propagation_layer(dataset, w, b, active_function,\
 
 
 dataset = np.random.randn(200, 20, 20, 3)
-img_output, cache = pool_forward(dataset)
+w = np.random.randn(10,5,5,3)
+b = np.random.randn(10)
+img_output, cache = conv_forward(dataset, w, b, 1, 2)
+
+
 print(img_output.shape)
-print(pool_back_propogation(img_output, cache).shape)
+# img_output, cache = pool_forward(dataset)
+# print(img_output.shape)
+# print(pool_back_propogation(img_output, cache).shape)

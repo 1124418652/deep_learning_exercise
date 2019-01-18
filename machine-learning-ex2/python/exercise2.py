@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-#usr/bin/env python 
-# -*- coding: utf-8 -*-
-
-import os
-import time
-import csv
-import numpy as np
-# import pandas as pd
-
-path = "../ex2/"
-print(path)
-=======
 #usr/bin/env python
 # -*- coding: utf-8 -*-
 """
@@ -178,4 +165,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
->>>>>>> 49c2e3d73f8e388d07fbbb1a8ff461b167336b17
+
