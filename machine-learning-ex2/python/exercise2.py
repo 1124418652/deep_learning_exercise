@@ -161,7 +161,7 @@ def demo2():
 	exe2_2.testing()
 
 def main():
-	demo1()
+	demo2()
 
 if __name__ == '__main__':
 	main()
